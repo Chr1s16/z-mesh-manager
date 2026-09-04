@@ -93,16 +93,21 @@ UNIT
 }
 
 do_up() {
-  local secret=""; IFS= read -r secret || true
+  local secret="" secret_file="$DATA/locks/request-credential"
+  trap 'rm -f "$secret_file"' EXIT
+  if [[ -f "$secret_file" ]]; then
+    [[ "$(stat -c '%a' "$secret_file")" == 600 ]] || { echo "Credential file permissions are not 0600" >&2; exit 77; }
+    IFS= read -r secret <"$secret_file" || true
+  fi
   if [[ "$PROVIDER" == tailscale ]]; then
     systemctl disable --now netbird 2>/dev/null || true
-    [[ -n "$secret" ]] && printf %s "$secret" >"$DATA/locks/credential" && chmod 600 "$DATA/locks/credential"
-    if [[ -n "$secret" ]]; then /usr/bin/tailscale up --auth-key="file:$DATA/locks/credential"; rm -f "$DATA/locks/credential"; else /usr/bin/tailscale up; fi
+    if [[ -n "$secret" ]]; then /usr/bin/tailscale up --auth-key="file:$secret_file"; else /usr/bin/tailscale up; fi
   else
     systemctl disable --now tailscaled 2>/dev/null || true
     local args=(); [[ -n "${ZMM_MANAGEMENT_URL:-}" ]] && args+=(--management-url "$ZMM_MANAGEMENT_URL")
-    if [[ -n "$secret" ]]; then printf %s "$secret" >"$DATA/locks/credential"; chmod 600 "$DATA/locks/credential"; /usr/bin/netbird up --setup-key-file "$DATA/locks/credential" "${args[@]}"; rm -f "$DATA/locks/credential"; else /usr/bin/netbird up "${args[@]}"; fi
+    if [[ -n "$secret" ]]; then /usr/bin/netbird up --setup-key-file "$secret_file" "${args[@]}"; else /usr/bin/netbird up "${args[@]}"; fi
   fi
+  rm -f "$secret_file"; secret=""
   audit
 }
 

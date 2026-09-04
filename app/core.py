@@ -1,4 +1,5 @@
 import asyncio, json, os, secrets, stat, time
+from contextlib import contextmanager
 from pathlib import Path
 
 DATA = Path(os.getenv("ZMM_DATA_DIR", "/DATA/AppData/z-mesh-manager"))
@@ -34,6 +35,21 @@ def log(event: str, detail: str = ""):
     if LOG_FILE.stat().st_size > 2_000_000:
         LOG_FILE.replace(LOG_FILE.with_suffix(".log.1"))
 
+@contextmanager
+def staged_secret(value: str | None):
+    path = DATA / "locks" / "request-credential"
+    path.unlink(missing_ok=True)
+    if value:
+        fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+        try:
+            os.write(fd, value.encode("utf-8"))
+        finally:
+            os.close(fd)
+    try:
+        yield path if value else None
+    finally:
+        path.unlink(missing_ok=True)
+
 async def host(action: str, provider: str = "all", secret: str | None = None, management_url: str | None = None):
     if action not in {"audit","install","repair","update","restart","up","down","rollback"}: raise ValueError("Unsupported action")
     if provider not in {"all","tailscale","netbird"}: raise ValueError("Unsupported provider")
@@ -41,9 +57,9 @@ async def host(action: str, provider: str = "all", secret: str | None = None, ma
     if management_url: env["ZMM_MANAGEMENT_URL"] = management_url
     script = (APP_ROOT / "host" / "host-helper.sh").read_bytes()
     async with LOCK:
-        proc = await asyncio.create_subprocess_exec("nsenter","-t","1","-m","-u","-n","-i","--","/bin/bash","-s", stdin=asyncio.subprocess.PIPE, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.STDOUT, env=env)
-        payload = script + (b"\n" + secret.encode() if secret else b"\n")
-        out, _ = await asyncio.wait_for(proc.communicate(payload), timeout=900)
+        with staged_secret(secret):
+            proc = await asyncio.create_subprocess_exec("nsenter","-t","1","-m","-u","-n","-i","--","/bin/bash","-s", stdin=asyncio.subprocess.PIPE, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.STDOUT, env=env)
+            out, _ = await asyncio.wait_for(proc.communicate(script + b"\n"), timeout=900)
     text = out.decode(errors="replace")
     log(f"{provider}.{action}", f"exit={proc.returncode} " + text[-1500:])
     if proc.returncode: raise RuntimeError(text[-2000:])

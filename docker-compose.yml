@@ -1,7 +1,7 @@
 name: z-mesh-manager
 services:
   z-mesh-manager:
-    image: ghcr.io/chr1s16/z-mesh-manager:0.1.0
+    image: ghcr.io/chr1s16/z-mesh-manager:0.1.1
     container_name: z-mesh-manager
     restart: unless-stopped
     privileged: true

@@ -4,6 +4,8 @@ Z-Mesh Manager is a community-built web manager for running **Tailscale or NetBi
 
 > Early preview. Tailscale has been validated upstream on ZimaOS 1.7.0. The NetBird sysext still requires real-device validation before production use.
 
+Current container release: `0.1.1`.
+
 ## Install
 
 ```bash
