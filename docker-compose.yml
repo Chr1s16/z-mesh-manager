@@ -1,0 +1,41 @@
+name: z-mesh-manager
+services:
+  z-mesh-manager:
+    image: ghcr.io/Chr1s16/z-mesh-manager:0.1.0
+    build: .
+    container_name: z-mesh-manager
+    restart: unless-stopped
+    privileged: true
+    pid: host
+    ports:
+      - "8484:8484"
+    environment:
+      ZMM_DATA_DIR: /DATA/AppData/z-mesh-manager
+      ZMM_PORT: "8484"
+      ZMM_AUTO_REPAIR: "true"
+      ZMM_UPDATE_CHECK_HOURS: "24"
+    volumes:
+      - /DATA:/DATA
+    security_opt:
+      - no-new-privileges:false
+
+x-casaos:
+  id: com.community.z-mesh-manager
+  main: z-mesh-manager
+  index: /
+  port_map: "8484"
+  scheme: http
+  icon: https://raw.githubusercontent.com/Chr1s16/z-mesh-manager/main/app/static/icon.png
+  title:
+    en_US: Z-Mesh Manager
+  tagline:
+    en_US: Native mesh VPN management for immutable NAS hosts
+  description:
+    en_US: Install, monitor, repair, and update native Tailscale or NetBird clients from a clean web interface.
+  author: Community
+  developer: Community
+  category: Network
+  architectures:
+    - amd64
+    - arm64
+  version: "0.1.0"
