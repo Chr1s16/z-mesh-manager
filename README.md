@@ -2,7 +2,9 @@
 
 Z-Mesh Manager is a community-built web manager for running **Tailscale or NetBird natively on an immutable NAS host** such as ZimaOS. The UI runs in Docker; the selected VPN client runs on the host through a systemd system extension, so host services such as SMB remain directly reachable.
 
-> Early preview. Tailscale has been validated upstream on ZimaOS 1.7.0. The NetBird sysext still requires real-device validation before production use.
+It was created to let ZimaOS's native Backup feature reach an SMB destination on a remote ZimaOS device through a mesh VPN. This end-to-end backup path has been tested successfully with NetBird on ZimaOS v1.7.1.
+
+> Early preview. Native NetBird installation and SMB connectivity for ZimaOS Backup have been validated on real ZimaOS v1.7.1 devices. The upstream Tailscale system extension has been validated on ZimaOS v1.7.0, but the equivalent end-to-end ZimaOS Backup workflow has not yet been validated with Tailscale.
 
 Current container release: `0.2.1`.
 
