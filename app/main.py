@@ -29,7 +29,7 @@ async def lifespan(app):
     yield
     task.cancel()
 
-app = FastAPI(title="Z-Mesh Manager", version="0.2.0", lifespan=lifespan)
+app = FastAPI(title="Z-Mesh Manager", version="0.2.1", lifespan=lifespan)
 STATIC = APP_ROOT / "app" / "static"
 app.mount("/static", StaticFiles(directory=STATIC), name="static")
 

@@ -15,6 +15,7 @@ jobs:
       - uses: actions/setup-python@v5
         with: {python-version: '3.13'}
       - run: pip install -r requirements-dev.txt
+      - run: bash -n host/host-helper.sh
       - run: pytest -q
   image:
     if: github.event_name != 'pull_request'
@@ -34,5 +35,5 @@ jobs:
           context: .
           platforms: linux/amd64,linux/arm64
           push: true
-          tags: ghcr.io/chr1s16/z-mesh-manager:latest,ghcr.io/chr1s16/z-mesh-manager:0.2.0
+          tags: ghcr.io/chr1s16/z-mesh-manager:latest,ghcr.io/chr1s16/z-mesh-manager:0.2.1
 

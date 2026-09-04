@@ -104,7 +104,7 @@ UNIT
 
 do_up() {
   local secret="" secret_file="$DATA/locks/request-credential"
-  trap 'rm -f "$secret_file"' EXIT
+  trap 'rm -f "$DATA/locks/request-credential"' EXIT
   if [[ -f "$secret_file" ]]; then
     [[ "$(stat -c '%a' "$secret_file")" == 600 ]] || { echo "Credential file permissions are not 0600" >&2; exit 77; }
     IFS= read -r secret <"$secret_file" || true
@@ -128,6 +128,16 @@ uninstall_provider() {
   progress 15 "Stopping $PROVIDER"
   if [[ "$PROVIDER" == tailscale ]]; then
     systemctl disable --now tailscaled tailscaled-watchdog.timer 2>/dev/null || true
+    progress 35 "Cleaning Tailscale network and firewall state"
+    /usr/bin/tailscaled --cleanup 2>/dev/null || true
+    if command -v iptables-legacy >/dev/null; then
+      iptables-legacy -D INPUT -j ts-input 2>/dev/null || true
+      iptables-legacy -D FORWARD -j ts-forward 2>/dev/null || true
+      iptables-legacy -t nat -D POSTROUTING -j ts-postrouting 2>/dev/null || true
+      iptables-legacy -F ts-input 2>/dev/null || true; iptables-legacy -X ts-input 2>/dev/null || true
+      iptables-legacy -F ts-forward 2>/dev/null || true; iptables-legacy -X ts-forward 2>/dev/null || true
+      iptables-legacy -t nat -F ts-postrouting 2>/dev/null || true; iptables-legacy -t nat -X ts-postrouting 2>/dev/null || true
+    fi
     rm -f /etc/systemd/system/tailscaled-watchdog.service /etc/systemd/system/tailscaled-watchdog.timer
   else
     systemctl disable --now netbird zmm-netbird-watchdog.timer 2>/dev/null || true
