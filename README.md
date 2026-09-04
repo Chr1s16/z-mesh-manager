@@ -1,20 +1,21 @@
 # Z-Mesh Manager
 
-Z-Mesh Manager is a community-built web manager for running **Tailscale or NetBird natively on an immutable NAS host**. The UI runs in Docker; the selected VPN client runs on the host through a systemd system extension, so host services such as SMB remain directly reachable.
+Z-Mesh Manager is a community-built web manager for running **Tailscale or NetBird natively on an immutable NAS host** such as ZimaOS. The UI runs in Docker; the selected VPN client runs on the host through a systemd system extension, so host services such as SMB remain directly reachable.
 
 > Early preview. Tailscale has been validated upstream on ZimaOS 1.7.0. The NetBird sysext still requires real-device validation before production use.
 
 ## Install
 
-Replace `OWNER` in `docker-compose.yml` with the GitHub owner after forking, then run:
-
 ```bash
-git clone https://github.com/OWNER/z-mesh-manager
+git clone https://github.com/Chr1s16/z-mesh-manager
 cd z-mesh-manager
-docker compose up -d --build
+docker compose pull
+docker compose up -d
 ```
 
 Open `http://YOUR-NAS-IP:8484`.
+
+For local development, use `docker compose -f docker-compose.dev.yml up -d --build`.
 
 ## Persistence
 
