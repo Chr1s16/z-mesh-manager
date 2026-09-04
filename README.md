@@ -6,6 +6,8 @@ It was created to let ZimaOS's native Backup feature reach an SMB destination on
 
 > Early preview. Native NetBird installation and SMB connectivity for ZimaOS Backup have been validated on real ZimaOS v1.7.1 devices. The upstream Tailscale system extension has been validated on ZimaOS v1.7.0, but the equivalent end-to-end ZimaOS Backup workflow has not yet been validated with Tailscale.
 
+![Z-Mesh Manager dashboard](docs/z-mesh-manager-dashboard.png)
+
 Current container release: `0.2.1`.
 
 ## Install
