@@ -10,7 +10,7 @@ class ActivateRequest(BaseModel):
 
 class ActionRequest(BaseModel):
     provider: Provider
-    action: Literal["install", "repair", "update", "restart", "up", "down", "rollback"]
+    action: Literal["install", "repair", "update", "restart", "up", "down", "rollback", "uninstall", "purge"]
 
 class SettingsRequest(BaseModel):
     auto_repair: bool = True

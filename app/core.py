@@ -50,8 +50,8 @@ def staged_secret(value: str | None):
     finally:
         path.unlink(missing_ok=True)
 
-async def host(action: str, provider: str = "all", secret: str | None = None, management_url: str | None = None):
-    if action not in {"audit","install","repair","update","restart","up","down","rollback"}: raise ValueError("Unsupported action")
+async def host(action: str, provider: str = "all", secret: str | None = None, management_url: str | None = None, progress=None):
+    if action not in {"audit","install","repair","update","restart","up","down","rollback","uninstall","purge"}: raise ValueError("Unsupported action")
     if provider not in {"all","tailscale","netbird"}: raise ValueError("Unsupported provider")
     env = os.environ.copy(); env["ZMM_ACTION"] = action; env["ZMM_PROVIDER"] = provider
     if management_url: env["ZMM_MANAGEMENT_URL"] = management_url
@@ -59,8 +59,17 @@ async def host(action: str, provider: str = "all", secret: str | None = None, ma
     async with LOCK:
         with staged_secret(secret):
             proc = await asyncio.create_subprocess_exec("nsenter","-t","1","-m","-u","-n","-i","--","/bin/bash","-s", stdin=asyncio.subprocess.PIPE, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.STDOUT, env=env)
-            out, _ = await asyncio.wait_for(proc.communicate(script + b"\n"), timeout=900)
-    text = out.decode(errors="replace")
+            proc.stdin.write(script + b"\n"); await proc.stdin.drain(); proc.stdin.close()
+            lines = []
+            async with asyncio.timeout(900):
+                while line := await proc.stdout.readline():
+                    decoded = line.decode(errors="replace").rstrip()
+                    if decoded.startswith("::progress::"):
+                        _, _, pct, message = decoded.split("::", 3)
+                        if progress: progress(int(pct), message)
+                    else: lines.append(decoded)
+                await proc.wait()
+    text = "\n".join(lines)
     log(f"{provider}.{action}", f"exit={proc.returncode} " + text[-1500:])
     if proc.returncode: raise RuntimeError(text[-2000:])
     try: return json.loads(text.strip().splitlines()[-1])

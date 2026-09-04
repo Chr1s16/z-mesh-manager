@@ -1,4 +1,4 @@
-import asyncio, os, time
+import asyncio, os, time, uuid
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
@@ -29,7 +29,7 @@ async def lifespan(app):
     yield
     task.cancel()
 
-app = FastAPI(title="Z-Mesh Manager", version="0.1.0", lifespan=lifespan)
+app = FastAPI(title="Z-Mesh Manager", version="0.2.0", lifespan=lifespan)
 STATIC = APP_ROOT / "app" / "static"
 app.mount("/static", StaticFiles(directory=STATIC), name="static")
 
@@ -53,13 +53,34 @@ async def put_settings(req: SettingsRequest):
 
 @app.post("/api/action")
 async def action(req: ActionRequest):
-    try: return await host(req.action, req.provider)
-    except Exception as exc: raise HTTPException(500, str(exc))
+    job_id = uuid.uuid4().hex
+    JOBS[job_id] = {"id": job_id, "provider": req.provider, "action": req.action, "status": "queued", "progress": 0, "message": "Queued", "logs": []}
+    asyncio.create_task(run_job(job_id, req.action, req.provider))
+    return JOBS[job_id]
 
 @app.post("/api/activate")
 async def activate(req: ActivateRequest):
-    try: return await host("up", req.provider, req.credential, str(req.management_url) if req.management_url else None)
-    except Exception as exc: raise HTTPException(500, str(exc))
+    job_id = uuid.uuid4().hex
+    JOBS[job_id] = {"id": job_id, "provider": req.provider, "action": "connect", "status": "queued", "progress": 0, "message": "Queued", "logs": []}
+    asyncio.create_task(run_job(job_id, "up", req.provider, req.credential, str(req.management_url) if req.management_url else None))
+    return JOBS[job_id]
+
+JOBS = {}
+
+async def run_job(job_id, action, provider, credential=None, management_url=None):
+    job = JOBS[job_id]; job.update(status="running", progress=2, message="Preparing")
+    def update(pct, message):
+        job.update(progress=pct, message=message); job["logs"].append(message); job["logs"] = job["logs"][-100:]
+    try:
+        result = await host(action, provider, credential, management_url, update)
+        job.update(status="complete", progress=100, message="Complete", result=result)
+    except Exception as exc:
+        job.update(status="failed", message="Operation failed", error=str(exc), progress=max(job["progress"], 1))
+
+@app.get("/api/jobs/{job_id}")
+async def get_job(job_id: str):
+    if job_id not in JOBS: raise HTTPException(404, "Job not found")
+    return JOBS[job_id]
 
 @app.get("/api/logs")
 async def logs():

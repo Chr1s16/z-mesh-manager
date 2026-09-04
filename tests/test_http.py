@@ -11,4 +11,6 @@ def test_health_and_ui(tmp_path, monkeypatch):
         page = client.get("/")
         assert page.status_code == 200
         assert "Z-Mesh Manager" in page.text
+        assert 'data-view="maintenance"' in page.text
+        assert 'id="job-percent"' in page.text
         assert (tmp_path / "config" / "api-token").exists()

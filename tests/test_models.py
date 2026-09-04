@@ -5,6 +5,8 @@ import os
 
 def test_actions_are_allowlisted():
     assert ActionRequest(provider="tailscale", action="repair").action == "repair"
+    assert ActionRequest(provider="netbird", action="uninstall").action == "uninstall"
+    assert ActionRequest(provider="tailscale", action="purge").action == "purge"
     with pytest.raises(Exception): ActionRequest(provider="tailscale", action="shell")
 
 def test_settings_bounds():
